@@ -785,9 +785,8 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       updateSongButton(false);
     };
     backgroundPlaylist?.addEventListener('ended', () => {
-      // The opening song finishes first; Song 1 then continues automatically.
-      if (currentSong === 0) playPlaylist(1);
-      else { backgroundPlaylist.currentTime = 0; playPlaylist(1); }
+      // Keep both songs playing in order: Song 2 → Song 1 → repeat.
+      playPlaylist((currentSong + 1) % playlistTracks.length);
     });
     soundToggle?.addEventListener('click', function () {
       if (backgroundPlaylist?.paused) playPlaylist(currentSong);
