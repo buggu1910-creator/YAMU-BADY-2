@@ -392,7 +392,7 @@
     .gate-open-button,.gate-preview-button { cursor:pointer; margin-top:28px; padding:15px 27px; border:1px solid #ffe5bd; border-radius:999px; color:#fff; background:linear-gradient(105deg,#df6396,#ba59d2); box-shadow:0 12px 27px rgba(112,27,89,.55); font:700 1rem "Hind Vadodara",sans-serif; }
     .gate-preview-button { display:block; margin:13px auto 0; border-color:rgba(255,232,190,.48); color:#ffeac8; background:rgba(255,255,255,.1); box-shadow:none; font-size:.78rem; }
     .gate-open-button:hover,.gate-preview-button:hover { transform:translateY(-3px); }
-    .gate-preview-note { min-height:1.3em; margin:15px 0 0; color:#f8d7e5; font-size:.78rem; }
+    .gate-preview-note { min-height:1.3em; margin:15px 0 0; color:#f8d7e5; font-size:.78rem; }.gate-seconds { cursor:pointer; }.gate-seconds:focus-visible { outline:2px solid #ffe5bd; outline-offset:3px; }.gate-code { max-width:390px; margin:19px auto 0; padding:16px; border:1px solid rgba(255,229,189,.4); border-radius:16px; background:rgba(255,255,255,.08); }.gate-code[hidden] { display:none; }.gate-code label { display:block; margin-bottom:11px; color:#ffe4bd; font-size:.84rem; }.gate-code-row { display:flex; gap:8px; }.gate-code input { min-width:0; flex:1; padding:11px 12px; border:1px solid rgba(255,229,189,.55); border-radius:10px; color:#fff; background:rgba(19,5,17,.38); font:700 1rem "Montserrat",sans-serif; letter-spacing:.18em; text-align:center; }.gate-code button { cursor:pointer; padding:10px 15px; border:1px solid #ffe5bd; border-radius:10px; color:#fff; background:linear-gradient(105deg,#df6396,#ba59d2); font:700 .82rem "Hind Vadodara",sans-serif; }.gate-code-note { min-height:1.3em; margin:10px 0 0; color:#ffd1e4; font-size:.76rem; }
     @keyframes gate-twinkle { 50% { transform:scale(1.45) rotate(24deg); opacity:.55; } }
     @media (max-width:440px) { .birthday-gate-card { border-radius:23px; }.gate-timer { gap:6px; }.gate-unit { padding:12px 3px; }.gate-unit small { font-size:.56rem; } }
   </style>
@@ -416,10 +416,14 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
         <div class="gate-unit"><b id="gateDays">00</b><small>Days</small></div>
         <div class="gate-unit"><b id="gateHours">00</b><small>Hours</small></div>
         <div class="gate-unit"><b id="gateMinutes">00</b><small>Minutes</small></div>
-        <div class="gate-unit"><b id="gateSeconds">00</b><small>Seconds</small></div>
+        <div class="gate-unit gate-seconds" id="gateSecondsTap" role="button" tabindex="0" aria-label="Tap twelve times to reveal the private code"><b id="gateSeconds">00</b><small>Seconds</small></div>
       </div>
       <button class="gate-open-button" id="unlockBirthday" type="button" hidden>Open Birthday Surprise ♥</button>
-      <button class="gate-preview-button" id="previewBirthday" type="button" hidden>Preview the surprise</button>
+      <form class="gate-code" id="gateCode" hidden>
+        <label for="gateCodeInput">એક ખાસ code નાખો ♥</label>
+        <div class="gate-code-row"><input id="gateCodeInput" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="••••" aria-label="Private access code"><button type="submit">Open</button></div>
+        <p class="gate-code-note" id="gateCodeNote"></p>
+      </form>
       <p class="gate-preview-note" id="gatePreviewNote"></p>
     </div>
   </section>
@@ -649,15 +653,20 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
     const gateMessage = document.querySelector('#gateMessage');
     const gateTimer = document.querySelector('.gate-timer');
     const unlockBirthday = document.querySelector('#unlockBirthday');
-    const previewBirthday = document.querySelector('#previewBirthday');
     const gatePreviewNote = document.querySelector('#gatePreviewNote');
+    const gateSecondsTap = document.querySelector('#gateSecondsTap');
+    const gateCode = document.querySelector('#gateCode');
+    const gateCodeInput = document.querySelector('#gateCodeInput');
+    const gateCodeNote = document.querySelector('#gateCodeNote');
     const gateValues = {
       days: document.querySelector('#gateDays'),
       hours: document.querySelector('#gateHours'),
       minutes: document.querySelector('#gateMinutes'),
       seconds: document.querySelector('#gateSeconds')
     };
-    const previewMode = new URLSearchParams(window.location.search).get('preview') === '1';
+    const privateGateCode = '1912';
+    const tapsToRevealCode = 12;
+    let gateTapCount = 0;
     let birthdayCountdown;
 
     const openBirthdaySite = () => {
@@ -665,6 +674,22 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       birthdayGate?.classList.add('is-open');
       document.body.classList.remove('gate-locked');
       window.scrollTo(0, 0);
+    };
+    const showGateCode = () => {
+      if (!gateCode) return;
+      gateCode.hidden = false;
+      gatePreviewNote.textContent = 'Private access unlocked. હવે code નાખો ♥';
+      gateCodeInput?.focus();
+    };
+    const revealCodeAfterTap = () => {
+      if (Date.now() >= birthdayStartsAt.getTime() || !gateCode?.hidden) return;
+      gateTapCount += 1;
+      const tapsLeft = tapsToRevealCode - gateTapCount;
+      if (tapsLeft > 0) {
+        gatePreviewNote.textContent = `${tapsLeft} વધુ taps પછી એક secret ખુલશે…`;
+      } else {
+        showGateCode();
+      }
     };
     const renderBirthdayCountdown = () => {
       const remaining = Math.max(0, birthdayStartsAt.getTime() - Date.now());
@@ -679,20 +704,26 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       if (remaining === 0) {
         clearInterval(birthdayCountdown);
         gateTimer.hidden = true;
+        gateCode.hidden = true;
         gateMessage.textContent = 'It is finally your birthday! Your surprise is ready. ♥';
         unlockBirthday.hidden = false;
       }
     };
     renderBirthdayCountdown();
-    if (Date.now() < birthdayStartsAt.getTime()) {
-      birthdayCountdown = setInterval(renderBirthdayCountdown, 1000);
-      if (previewMode) {
-        previewBirthday.hidden = false;
-        gatePreviewNote.textContent = 'Preview mode is on for you.';
-      }
-    }
+    if (Date.now() < birthdayStartsAt.getTime()) birthdayCountdown = setInterval(renderBirthdayCountdown, 1000);
     unlockBirthday?.addEventListener('click', openBirthdaySite);
-    previewBirthday?.addEventListener('click', openBirthdaySite);
+    gateSecondsTap?.addEventListener('click', revealCodeAfterTap);
+    gateSecondsTap?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); revealCodeAfterTap(); }
+    });
+    gateCode?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (gateCodeInput?.value === privateGateCode) openBirthdaySite();
+      else {
+        gateCodeNote.textContent = 'Code સાચો નથી. ફરી try કરો ♥';
+        gateCodeInput?.select();
+      }
+    });
 
     const progress = document.querySelector('#readingProgress');
     const updateReadingProgress = () => {
