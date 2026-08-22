@@ -929,8 +929,10 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
     const voiceNow = document.querySelector('#voiceNow');
     const voiceNoteList = document.querySelector('#voiceNoteList');
     let currentVoice = 0;
+    let resumePlaylistAfterVoice = false;
     const playVoice = (index) => {
       if (!voiceAudio || !voiceNow) return;
+      if (!resumePlaylistAfterVoice && backgroundPlaylist && !backgroundPlaylist.paused) resumePlaylistAfterVoice = true;
       stopPlaylist();
       currentVoice = index;
       voiceAudio.src = `voice%20note/${voiceFiles[index]}`;
@@ -951,7 +953,11 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
         voiceOpen.setAttribute('aria-expanded', String(opening));
         voiceOpen.textContent = opening ? 'Voice notes વાગી રહી છે ♥' : 'Folder ખોલો અને સાંભળો ♥';
         if (opening) playVoice(currentVoice);
-        else voiceAudio.pause();
+        else {
+          voiceAudio.pause();
+          if (resumePlaylistAfterVoice) playPlaylist(currentSong);
+          resumePlaylistAfterVoice = false;
+        }
       });
       voiceAudio.addEventListener('ended', () => playVoice((currentVoice + 1) % voiceFiles.length));
     }
