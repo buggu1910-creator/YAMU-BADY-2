@@ -674,6 +674,9 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       birthdayGate?.classList.add('is-open');
       document.body.classList.remove('gate-locked');
       window.scrollTo(0, 0);
+      // This click also satisfies browser audio rules, so the first intro track
+      // can begin as soon as the birthday page is opened.
+      playIntroPlaylist();
     };
     const showGateCode = () => {
       if (!gateCode) return;
@@ -765,7 +768,11 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
 
     const backgroundPlaylist = document.querySelector('#backgroundPlaylist');
     const soundToggle = document.querySelector('#soundToggle');
-    const playlistTracks = ['SONG 2.mpeg', 'SONG 1.mpeg'];
+    // The first two screens share an intro soundtrack; the story uses the
+    // regular songs after the scanner is complete.
+    const introTracks = ['audio 1.mpeg', 'audio 2.mpeg'];
+    const regularTracks = ['SONG 2.mpeg', 'SONG 1.mpeg'];
+    let activePlaylist = 'intro';
     let currentSong = 0;
     const updateSongButton = (playing) => {
       if (!soundToggle) return;
@@ -774,10 +781,21 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
     };
     const playPlaylist = (songIndex = currentSong) => {
       if (!backgroundPlaylist) return;
+      const playlistTracks = activePlaylist === 'intro' ? introTracks : regularTracks;
       currentSong = songIndex;
       const songPath = encodeURI(playlistTracks[currentSong]);
       if (!backgroundPlaylist.src.endsWith(songPath)) backgroundPlaylist.src = songPath;
       backgroundPlaylist.play().then(() => updateSongButton(true)).catch(() => updateSongButton(false));
+    };
+    const playIntroPlaylist = () => {
+      activePlaylist = 'intro';
+      currentSong = 0;
+      playPlaylist(0);
+    };
+    const playRegularPlaylist = () => {
+      activePlaylist = 'regular';
+      currentSong = 0;
+      playPlaylist(0);
     };
     const stopPlaylist = () => {
       if (!backgroundPlaylist) return;
@@ -785,9 +803,18 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       updateSongButton(false);
     };
     backgroundPlaylist?.addEventListener('ended', () => {
-      // Keep both songs playing in order: Song 2 → Song 1 → repeat.
-      playPlaylist((currentSong + 1) % playlistTracks.length);
+      // Keep the active two-track playlist playing in order and repeat it.
+      const tracks = activePlaylist === 'intro' ? introTracks : regularTracks;
+      playPlaylist((currentSong + 1) % tracks.length);
     });
+    // Start on the countdown page as well. Most browsers allow this directly;
+    // where autoplay is blocked, the visitor's first tap or key press starts it.
+    playIntroPlaylist();
+    const startIntroAfterFirstInteraction = () => {
+      if (activePlaylist === 'intro' && backgroundPlaylist?.paused) playIntroPlaylist();
+    };
+    document.addEventListener('pointerdown', startIntroAfterFirstInteraction, { once: true, passive: true });
+    document.addEventListener('keydown', startIntroAfterFirstInteraction, { once: true });
     soundToggle?.addEventListener('click', function () {
       if (backgroundPlaylist?.paused) playPlaylist(currentSong);
       else stopPlaylist();
@@ -1008,6 +1035,7 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       document.querySelector('#opening').classList.add('hide');
       beautyScanner?.classList.add('show');
       beautyScanner?.setAttribute('aria-hidden', 'false');
+      if (backgroundPlaylist?.paused) playIntroPlaylist();
     });
     startScan?.addEventListener('click', function () {
       if (scannerCard?.classList.contains('scanning')) return;
@@ -1029,7 +1057,10 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
       beautyScanner?.classList.remove('show');
       beautyScanner?.setAttribute('aria-hidden', 'true');
       document.querySelector('#story').classList.add('show');
-      if (backgroundPlaylist?.paused) playPlaylist(currentSong);
+      // Reaching the third page ends the two intro recordings and starts the
+      // regular background playlist from its first song.
+      stopPlaylist();
+      playRegularPlaylist();
     });
     const secretLetterOpen = document.querySelector('#secretLetterOpen');
     const secretLetterStage = document.querySelector('#secretLetterStage');
