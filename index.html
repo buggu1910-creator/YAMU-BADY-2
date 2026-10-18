@@ -562,7 +562,7 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
           <p class="diary-teaser">આ ડાયરી ખોલતા પહેલાં બસ એટલું યાદ રાખજે, યામિની—આ પાનાંઓમાં માત્ર શબ્દો નથી; એ બધી લાગણીઓ છે જે હું તારી સામે ઊભો રહું ત્યારે ક્યારેય પૂરી કહી શકતો નથી. જો કોઈ પાને તારી આંખ ભીની થઈ જાય, તો સમજી લેજે કે એ દરેક શબ્દમાં મારું દિલ ધબકે છે… કારણ કે તું મારી એક યાદ નથી, તું મારી આખી દુનિયા છે. ♥</p>
           <div class="diary-book" id="diaryBook" hidden>
             <div class="diary-photo-page"><p>તારા નામે લખાયેલા દરેક શબ્દમાં,<br>મારા દિલનો એક નાનો ટુકડો રહે છે. ♥</p></div>
-            <div class="diary-writing-panel"><button class="diary-close" id="diaryClose" type="button" aria-label="ડાયરી બંધ કરો">♥</button><div class="diary-top"><span class="diary-title">મારા શબ્દો ♥</span><span class="diary-page-count" id="diaryPageCount">પાનું ૧</span></div><h3 class="diary-poem-title" id="diaryPoemTitle">મને ગમશે</h3><p class="diary-emotion" id="diaryEmotion"></p><textarea class="diary-page" id="diaryPage" aria-label="અહીં તમારી કવિતા લખો" placeholder="અહીંથી તમારી કવિતા શરૂ કરો…"></textarea><div class="diary-actions"><button id="diaryPrevious" type="button">← પાછલું પાનું</button><button id="diaryNext" type="button">આગળનું પાનું →</button></div><p class="diary-note">લખાણ આપમેળે સાચવાય છે — કોઈ પાનું કાઢવામાં આવશે નહીં. ♥</p></div>
+            <div class="diary-writing-panel"><button class="diary-close" id="diaryClose" type="button" aria-label="ડાયરી બંધ કરો">♥</button><div class="diary-top"><span class="diary-title">મારા શબ્દો ♥</span><span class="diary-page-count" id="diaryPageCount">પાનું 1 / 12</span></div><h3 class="diary-poem-title" id="diaryPoemTitle">મને ગમશે</h3><p class="diary-emotion" id="diaryEmotion"></p><textarea class="diary-page" id="diaryPage" aria-label="અહીં તમારી કવિતા લખો" placeholder="અહીંથી તમારી કવિતા શરૂ કરો…"></textarea><div class="diary-actions"><button id="diaryPrevious" type="button">← પાછલું પાનું</button><button id="diaryNext" type="button">આગળનું પાનું →</button></div><p class="diary-note">લખાણ આપમેળે સાચવાય છે — કોઈ પાનું કાઢવામાં આવશે નહીં. ♥</p></div>
           </div>
         </div>
       </section>
@@ -1097,7 +1097,7 @@ html{-webkit-text-size-adjust:100%}body{min-width:320px}#opening{padding:20px 16
     const diaryNext = document.querySelector('#diaryNext');
     const diaryPageCount = document.querySelector('#diaryPageCount');
     const diaryPoemTitle = document.querySelector('#diaryPoemTitle');
-    const diaryStorageKey = 'yamini-poetry-diary-v1';
+    const diaryStorageKey = 'yamini-poetry-diary-v2';
     const firstDiaryPoem = `ઉતાવળો તો બહુ છું,
 પણ તારી રાહ જોવી મને ગમશે ...!!
 
@@ -1420,32 +1420,45 @@ The End`;
       ['નમ્ર પ્રેમ — જ્યાં નમવામાં પણ ઘમંડ નહીં, ફક્ત પ્રેમ અનુભવાય. ♥', '#a04470', '#ffedf4'],
       ['અંતિમ અહેસાસ — શબ્દો પૂરા થાય, પણ તારા માટેની લાગણી નહીં. ∞', '#7d315f', '#f8e5ef']
     ];
-    let diaryPages = [firstDiaryPoem, secondDiaryPoem, thirdDiaryPoem, fourthDiaryPoem, fifthDiaryPoem, sixthDiaryPoem, seventhDiaryPoem, eighthDiaryPoem, tenthDiaryPoem, eleventhDiaryPoem, newEleventhDiaryPoem, twelfthDiaryPoem];
+    const defaultDiaryPages = [
+      firstDiaryPoem,
+      secondDiaryPoem,
+      thirdDiaryPoem,
+      fourthDiaryPoem,
+      fifthDiaryPoem,
+      sixthDiaryPoem,
+      seventhDiaryPoem,
+      eighthDiaryPoem,
+      tenthDiaryPoem,
+      eleventhDiaryPoem,
+      newEleventhDiaryPoem,
+      twelfthDiaryPoem
+    ];
+    let diaryPages = [...defaultDiaryPages];
     let diaryIndex = 0;
     try {
+      localStorage.removeItem('yamini-poetry-diary-v1');
       const savedDiary = JSON.parse(localStorage.getItem(diaryStorageKey));
-      if (Array.isArray(savedDiary) && savedDiary.length) diaryPages = savedDiary.map((page) => String(page));
+      if (Array.isArray(savedDiary) && savedDiary.length) {
+        diaryPages = defaultDiaryPages.map((defaultPoem, i) =>
+          typeof savedDiary[i] === 'string' && savedDiary[i].trim() ? savedDiary[i] : defaultPoem
+        );
+      }
     } catch (_) { /* The diary still works if storage is unavailable. */ }
-    // Remove the former ninth page once for diaries saved before this update.
-    if (diaryPages.length >= 11 && diaryPages[8] === tenthDiaryPoem && diaryPages[9] === tenthDiaryPoem) diaryPages.splice(8, 1);
-    if (diaryPages[0] !== firstDiaryPoem) diaryPages.unshift(firstDiaryPoem);
-    if (diaryPages[1] !== secondDiaryPoem) diaryPages.splice(1, 0, secondDiaryPoem);
-    if (diaryPages[2] !== thirdDiaryPoem) diaryPages.splice(2, 0, thirdDiaryPoem);
-    if (diaryPages[3] !== fourthDiaryPoem) diaryPages.splice(3, 0, fourthDiaryPoem);
-    if (diaryPages[4] !== fifthDiaryPoem) diaryPages.splice(4, 0, fifthDiaryPoem);
-    if (diaryPages[5] !== sixthDiaryPoem) diaryPages.splice(5, 0, sixthDiaryPoem);
-    if (diaryPages[6] !== seventhDiaryPoem) diaryPages.splice(6, 0, seventhDiaryPoem);
-    if (diaryPages[7] !== eighthDiaryPoem) diaryPages.splice(7, 0, eighthDiaryPoem);
-    if (diaryPages[8] !== tenthDiaryPoem) diaryPages.splice(8, 0, tenthDiaryPoem);
-    if (diaryPages[9] !== eleventhDiaryPoem) diaryPages.splice(9, 0, eleventhDiaryPoem);
-    if (diaryPages[10] !== newEleventhDiaryPoem) diaryPages.splice(10, 0, newEleventhDiaryPoem);
-    if (diaryPages[11] !== twelfthDiaryPoem) diaryPages.splice(11, 0, twelfthDiaryPoem);
+
+    // Enforce strictly 12 pages maximum and minimum
+    diaryPages = diaryPages.slice(0, 12);
+    while (diaryPages.length < 12) {
+      diaryPages.push(defaultDiaryPages[diaryPages.length] || '');
+    }
+
     const saveDiary = () => {
-      try { localStorage.setItem(diaryStorageKey, JSON.stringify(diaryPages)); } catch (_) {}
+      try { localStorage.setItem(diaryStorageKey, JSON.stringify(diaryPages.slice(0, 12))); } catch (_) {}
     };
     saveDiary();
     const renderDiaryPage = () => {
       if (!diaryPage || !diaryPageCount || !diaryPrevious || !diaryNext) return;
+      diaryIndex = Math.max(0, Math.min(diaryIndex, diaryPages.length - 1));
       diaryPage.value = diaryPages[diaryIndex] || '';
       if (diaryPoemTitle) {
         diaryPoemTitle.hidden = !diaryPoemTitles[diaryIndex];
@@ -1456,9 +1469,10 @@ The End`;
       if (diaryEmotion) diaryEmotion.textContent = feeling?.[0] || 'મારા દિલના શબ્દો — ફક્ત તારા માટે. ♥';
       diaryBook?.style.setProperty('--diary-accent', feeling?.[1] || '#9c3166');
       diaryBook?.style.setProperty('--diary-wash', feeling?.[2] || '#ffeaf3');
-      diaryPageCount.textContent = `પાનું ${diaryIndex + 1}`;
+      diaryPageCount.textContent = `પાનું ${diaryIndex + 1} / 12`;
       diaryPrevious.disabled = diaryIndex === 0;
-      diaryNext.textContent = diaryIndex === diaryPages.length - 1 ? 'નવું પાનું →' : 'આગળનું પાનું →';
+      diaryNext.disabled = diaryIndex >= diaryPages.length - 1;
+      diaryNext.textContent = 'આગળનું પાનું →';
       diaryPage.classList.remove('turn');
       requestAnimationFrame(() => diaryPage.classList.add('turn'));
     };
@@ -1480,13 +1494,16 @@ The End`;
       saveDiary();
     });
     diaryPrevious?.addEventListener('click', () => {
-      if (diaryIndex > 0) { diaryIndex -= 1; renderDiaryPage(); }
+      if (diaryIndex > 0) {
+        diaryIndex -= 1;
+        renderDiaryPage();
+      }
     });
     diaryNext?.addEventListener('click', () => {
-      if (diaryIndex === diaryPages.length - 1) diaryPages.push('');
-      diaryIndex += 1;
-      saveDiary();
-      renderDiaryPage();
+      if (diaryIndex < diaryPages.length - 1) {
+        diaryIndex += 1;
+        renderDiaryPage();
+      }
     });
     document.querySelector('#finalButton').addEventListener('click', function () {
       document.querySelector('#secret').classList.add('show');
